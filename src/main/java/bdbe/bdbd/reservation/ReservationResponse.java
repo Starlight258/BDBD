@@ -2,13 +2,13 @@ package bdbe.bdbd.reservation;
 
 import bdbe.bdbd.bay.Bay;
 import bdbe.bdbd.carwash.Carwash;
-import bdbe.bdbd.file.File;
-import bdbe.bdbd.region.Region;
+import bdbe.bdbd.location.Location;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,8 +52,8 @@ public class ReservationResponse {
         @Setter
         @ToString
         public static class BookedTimeDTO{
-            private LocalTime startTime;
-            private LocalTime endTime;
+            private LocalDateTime startTime;
+            private LocalDateTime endTime;
         }
 
     }
@@ -64,9 +64,9 @@ public class ReservationResponse {
         private ReservationDTO reservation;
         private CarwashDTO carwash;
 
-        public findLatestOneResponseDTO(Reservation reservation, Bay bay, Carwash carwash, Region region) {
+        public findLatestOneResponseDTO(Reservation reservation, Bay bay, Carwash carwash, Location location) {
             ReservationDTO reservationDTO = new ReservationDTO();
-            reservationDTO.date = reservation.getDate();
+
             TimeDTO timeDTO = new TimeDTO();
             timeDTO.start = reservation.getStartTime();
             timeDTO.end = reservation.getEndTime();
@@ -77,10 +77,10 @@ public class ReservationResponse {
 
             CarwashDTO carwashDTO = new CarwashDTO();
             carwashDTO.name = carwash.getName();
-            RegionDTO regionDTO = new RegionDTO();
-            regionDTO.latitude = region.getLatitude();
-            regionDTO.longitude = region.getLongitude();
-            carwashDTO.region = regionDTO;
+            LocationDTO locationDTO = new LocationDTO();
+            locationDTO.latitude = location.getLatitude();
+            locationDTO.longitude = location.getLongitude();
+            carwashDTO.location = locationDTO;
 //            carwashDTO.imagePath = image.getPath();
             this.carwash = carwashDTO;
         }
@@ -99,20 +99,20 @@ public class ReservationResponse {
     @ToString
     public static class CarwashDTO {
         private String name;
-        private RegionDTO region;
+        private LocationDTO location;
 //        private String imagePath;
     }
     @Getter
     @Setter
     @ToString
     public static class TimeDTO{
-        private LocalTime start;
-        private LocalTime end;
+        private LocalDateTime start;
+        private LocalDateTime end;
     }
     @Getter
     @Setter
     @ToString
-    public static class RegionDTO{
+    public static class LocationDTO{
         private double latitude;
         private double longitude;
     }
@@ -136,7 +136,6 @@ public class ReservationResponse {
     @Setter
     public static class ReservationInfoDTO{
         private Long id; // 예약 id
-        private LocalDate date;
         private TimeDTO time;
         private String carwashName;
         private int bayNum;
@@ -144,7 +143,6 @@ public class ReservationResponse {
 //        private String image;
         public ReservationInfoDTO(Reservation reservation, Bay bay, Carwash carwash) {
             this.id = reservation.getId();
-            this.date = reservation.getDate();
             TimeDTO timeDTO = new TimeDTO();
             timeDTO.start = reservation.getStartTime();
             timeDTO.end = reservation.getEndTime();

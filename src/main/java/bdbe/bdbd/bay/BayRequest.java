@@ -1,20 +1,12 @@
 package bdbe.bdbd.bay;
 
 import bdbe.bdbd.carwash.Carwash;
-import bdbe.bdbd.file.File;
-import bdbe.bdbd.optime.Optime;
-import bdbe.bdbd.region.Region;
-import bdbe.bdbd.reservation.ReservationResponse;
-import bdbe.bdbd.user.User;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class BayRequest {
 
@@ -49,7 +41,7 @@ public class BayRequest {
     @Getter
     @Setter
     @ToString
-    public static class RegionDTO {
+    public static class LocationDTO {
         private String placeName;
         private String address;
         private double latitude;

@@ -3,7 +3,7 @@ package bdbe.bdbd.carwash;
 import bdbe.bdbd.file.File;
 import bdbe.bdbd.optime.DayType;
 import bdbe.bdbd.optime.Optime;
-import bdbe.bdbd.region.Region;
+import bdbe.bdbd.location.Location;
 import bdbe.bdbd.user.User;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,7 +24,7 @@ public class CarwashRequest {
         @NotEmpty
         private String name;
         @NotNull
-        private RegionDTO region;
+        private LocationDTO location;
 
         private String price;
 
@@ -35,23 +35,23 @@ public class CarwashRequest {
         private String tel;
 
 
-        public Carwash toCarwashEntity(Region region, User user) {
+        public Carwash toCarwashEntity(Location location, User user) {
             return Carwash.builder()
                     .name(name)
                     .tel(tel)
                     .des(description)
                     .price(Integer.parseInt(price))  // 문자열 price를 int로 변환
-                    .region(region)
+                    .location(location)
                     .user(user)
                     .build();
         }
 
-        public Region toRegionEntity() {
-            return Region.builder()
-                    .placeName(region.getPlaceName())
-                    .address(region.getAddress())
-                    .latitude(region.getLatitude())
-                    .longitude(region.getLongitude())
+        public Location toLocationEntity() {
+            return Location.builder()
+                    .place(toLocationEntity().getPlace())
+                    .address(toLocationEntity().getAddress())
+                    .latitude(toLocationEntity().getLatitude())
+                    .longitude(toLocationEntity().getLongitude())
                     .build();
         }
 
@@ -59,14 +59,14 @@ public class CarwashRequest {
             List<Optime> optimeList = new ArrayList<>();
 
             optimeList.add(Optime.builder()
-                    .dayName(DayType.WEEKDAY)
+                    .dayType(DayType.WEEKDAY)
                     .startTime(optime.getWeekday().getStart())
                     .endTime(optime.getWeekday().getEnd())
                     .carwash(carwash)
                     .build());
 
             optimeList.add(Optime.builder()
-                    .dayName(DayType.WEEKEND)
+                    .dayType(DayType.WEEKEND)
                     .startTime(optime.getWeekend().getStart())
                     .endTime(optime.getWeekend().getEnd())
                     .carwash(carwash)
@@ -81,9 +81,7 @@ public class CarwashRequest {
                 String ext = getFileExtension(image);
                 File file = File.builder()
                         .name(image)
-                        .ext(ext)
                         .path("https://cdn.example.com/images/image1.jpg")
-                        .size(1500000)
                         .build();
                 fileList.add(file);
             }
@@ -103,7 +101,7 @@ public class CarwashRequest {
     @Getter
     @Setter
     @ToString
-    public static class RegionDTO {
+    public static class LocationDTO {
         private String placeName;
         private String address;
         private double latitude;
