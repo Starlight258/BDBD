@@ -1,5 +1,5 @@
 # Team10_BE
-10조
+10조 
 ![뽀득뽀득](https://member-images.githubusercontent.com/104883910/273441051-28dc9814-84e5-4828-abcb-c5e67d3deee4.png)
 
 ## 뽀득뽀득
@@ -131,7 +131,7 @@ ex ) AWS(아마존), GCP(구글), Azure(마이크로소프트), Cloudtype
 필요 산출물들은 수료 기준에 영향을 주는 것은 아니지만, 
 주차 별 산출물을 기반으로 평가가 이루어 집니다.
 
-주차 별 평가 점수는 추 후 최종 평가에 최종 합산 점수로 포함됩니다.
+주차 별 평가 점수는 추후 최종 평가에 최종 합산 점수로 포함됩니다.
 ```
 
 ![레포지토리 운영-001 (1)](https://github.com/Step3-kakao-tech-campus/practice/assets/138656575/acb0dccd-0441-4200-999a-981865535d5f)
