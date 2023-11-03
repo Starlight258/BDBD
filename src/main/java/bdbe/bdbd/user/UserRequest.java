@@ -1,4 +1,4 @@
-package bdbe.bdbd.member;
+package bdbe.bdbd.user;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +11,7 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 
-public class MemberRequest {
+public class UserRequest {
     @Getter
     @Setter
     public static class JoinDTO {
@@ -32,9 +32,9 @@ public class MemberRequest {
 //        @NotNull
 //        private Long locationId;
 
-//        @Enumerated(EnumType.STRING)
-//        @NotNull
-//        private MemberRole role;
+        @Enumerated(EnumType.STRING)
+        @NotNull
+        private UserRole role;
 
 //        //notNUll 설정 불가 by int
 //        private int credit = 0;
@@ -54,22 +54,12 @@ public class MemberRequest {
 //                    .role(String.valueOf(UserRole.ROLE_USER))
 //                    .build();
 //        }
-        public Member toUserEntity(String encodedPassword) {
-            return Member.builder()
+        public User toEntity(String encodedPassword) {
+            return User.builder()
                     .email(email)
                     .password(encodedPassword)
                     .username(username)
-                    .role(MemberRole.ROLE_USER)
-                    .tel(tel)
-                    .build();
-        }
-
-        public Member toOwnerEntity(String encodedPassword) {
-            return Member.builder()
-                    .email(email)
-                    .password(encodedPassword)
-                    .username(username)
-                    .role(MemberRole.ROLE_OWNER)
+                    .role(role)
                     .tel(tel)
                     .build();
         }

@@ -1,17 +1,20 @@
 package bdbe.bdbd.review;
 
+import bdbe.bdbd.bay.Bay;
 import bdbe.bdbd.bay.BayJPARepository;
 import bdbe.bdbd.carwash.Carwash;
 import bdbe.bdbd.carwash.CarwashJPARepository;
 import bdbe.bdbd.keyword.Keyword;
 import bdbe.bdbd.keyword.KeywordJPARepository;
 import bdbe.bdbd.keyword.KeywordType;
+import bdbe.bdbd.location.Location;
 import bdbe.bdbd.location.LocationJPARepository;
 import bdbe.bdbd.reservation.Reservation;
 import bdbe.bdbd.reservation.ReservationJPARepository;
 import bdbe.bdbd.keyword.reviewKeyword.ReviewKeywordJPARepository;
-import bdbe.bdbd.member.Member;
-import bdbe.bdbd.member.MemberJPARepository;
+import bdbe.bdbd.user.User;
+import bdbe.bdbd.user.UserJPARepository;
+import bdbe.bdbd.user.UserRole;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +30,12 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -48,7 +56,7 @@ public class ReviewRestControllerTest {
     LocationJPARepository locationJPARepository;
 
     @Autowired
-    MemberJPARepository memberJPARepository;
+    UserJPARepository userJPARepository;
 
     @Autowired
     CarwashJPARepository carwashJPARepository;
@@ -75,11 +83,11 @@ public class ReviewRestControllerTest {
     @DisplayName("리뷰 등록 기능")
     public void createReviewTest() throws Exception {
         // given
-        Member member = memberJPARepository.findByEmail("user@nate.com")
+        User user = userJPARepository.findByEmail("user@nate.com")
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
         // 예약 가져오기
         PageRequest pageRequest = PageRequest.of(0, 1);
-        List<Reservation> reservations = reservationJPARepository.findFirstByMemberIdWithJoinFetch(member.getId(), pageRequest);
+        List<Reservation> reservations = reservationJPARepository.findFirstByUserIdWithJoinFetch(user.getId(), pageRequest);
         Reservation reservation = reservations.isEmpty() ? null : reservations.get(0);
 
         Carwash carwash = reservation.getBay().getCarwash();
@@ -98,7 +106,7 @@ public class ReviewRestControllerTest {
 
         ReviewRequest.SaveDTO dto = new ReviewRequest.SaveDTO();
         dto.setCarwashId(carwash.getId());
-        dto.setKeywordIdList(keywordIds);
+        dto.setKeywordList(keywordIds);
         dto.setReservationId(reservation.getId());
         dto.setRate(5);
         dto.setComment("좋네요");
@@ -109,7 +117,7 @@ public class ReviewRestControllerTest {
 
         // when
         ResultActions resultActions = mvc.perform(
-                post("/api/reviews")
+                post("/reviews")
                         .content(requestBody)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
         );
@@ -217,7 +225,7 @@ public class ReviewRestControllerTest {
 
         // when
         ResultActions resultActions = mvc.perform(
-                MockMvcRequestBuilders.get(String.format("/api/carwashes/%d/reviews", carwashId))
+                MockMvcRequestBuilders.get(String.format("/carwashes/%d/reviews", carwashId))
         );
 
         // eye
@@ -247,7 +255,7 @@ public class ReviewRestControllerTest {
 
         // when
         ResultActions resultActions = mvc.perform(
-                MockMvcRequestBuilders.get("/api/reviews")
+                MockMvcRequestBuilders.get("/reviews")
         );
 
         // eye

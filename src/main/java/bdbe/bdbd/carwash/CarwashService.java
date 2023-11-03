@@ -1,29 +1,21 @@
 package bdbe.bdbd.carwash;
 
 
-import bdbe.bdbd._core.errors.utils.FileUploadUtil;
 import bdbe.bdbd._core.errors.utils.Haversine;
-import bdbe.bdbd.file.S3ProxyUploadService;
 import bdbe.bdbd.bay.BayJPARepository;
 import bdbe.bdbd.carwash.CarwashResponse.updateCarwashDetailsResponseDTO;
-import bdbe.bdbd.file.File;
-import bdbe.bdbd.file.FileJPARepository;
-import bdbe.bdbd.file.FileResponse;
 import bdbe.bdbd.keyword.Keyword;
 import bdbe.bdbd.keyword.KeywordJPARepository;
 import bdbe.bdbd.keyword.carwashKeyword.CarwashKeyword;
 import bdbe.bdbd.keyword.carwashKeyword.CarwashKeywordJPARepository;
 import bdbe.bdbd.location.Location;
 import bdbe.bdbd.location.LocationJPARepository;
-import bdbe.bdbd.member.MemberJPARepository;
 import bdbe.bdbd.optime.DayType;
 import bdbe.bdbd.optime.Optime;
 import bdbe.bdbd.optime.OptimeJPARepository;
 import bdbe.bdbd.review.ReviewJPARepository;
-import bdbe.bdbd.member.Member;
+import bdbe.bdbd.user.User;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -31,16 +23,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 //@Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
-@Slf4j
 public class CarwashService {
     private final CarwashJPARepository carwashJPARepository;
     private final KeywordJPARepository keywordJPARepository;
@@ -49,10 +41,6 @@ public class CarwashService {
     private final CarwashKeywordJPARepository carwashKeywordJPARepository;
     private final ReviewJPARepository reviewJPARepository;
     private final BayJPARepository bayJPARepository;
-    private final FileUploadUtil fileUploadUtil;
-    private final FileJPARepository fileJPARepository;
-    private final MemberJPARepository memberJPARepository;
-    private final S3ProxyUploadService s3ProxyUploadService;
 
     public List<CarwashResponse.FindAllDTO> findAll(int page) {
         // Pageable 검증
@@ -81,13 +69,13 @@ public class CarwashService {
     }
 
     @Transactional
-    public void save(CarwashRequest.SaveDTO saveDTO, MultipartFile[] images, Member sessionMember) {
+    public void save(CarwashRequest.SaveDTO saveDTO, User sessionUser) {
         // 별점은 리뷰에서 계산해서 넣어주기
         // 지역
         Location location = saveDTO.toLocationEntity();
         locationJPARepository.save(location);
         // 세차장
-        Carwash carwash = saveDTO.toCarwashEntity(location, sessionMember);
+        Carwash carwash = saveDTO.toCarwashEntity(location, sessionUser);
         carwashJPARepository.save(carwash);
         // 운영시간
         List<Optime> optimes = saveDTO.toOptimeEntities(carwash);
@@ -103,77 +91,8 @@ public class CarwashService {
             carwashKeywordList.add(carwashKeyword);
         }
         carwashKeywordJPARepository.saveAll(carwashKeywordList);
-
-        uploadAndSaveFiles(images, carwash);
-
-//        // 이미지 업로드
-//        try {
-//            List<MultipartFile> multipartFileList = Arrays.asList(images);
-//            log.info("image upload start");
-//            List<String> imageUrls = s3ProxyUploadService.uploadFiles(multipartFileList);
-//
-//            // 파일 저장
-//            List<bdbe.bdbd.file.File> files = new ArrayList<>();
-//            for (String imageUrl : imageUrls) {
-//                bdbe.bdbd.file.File newFile = bdbe.bdbd.file.File.builder()
-//                        .name(imageUrl.substring(imageUrl.lastIndexOf("/") + 1))
-//                        .url(imageUrl)
-//                        .uploadedAt(LocalDateTime.now())
-//                        .carwash(carwash)
-//                        .build();
-//                files.add(newFile);
-//            }
-//            fileJPARepository.saveAll(files);
-//        } catch (Exception e) {
-//            logger.info("file upload error : " + e.getMessage());
-//        }
-
     } //변경감지, 더티체킹, flush, 트랜잭션 종료
 
-    @Transactional
-    public void uploadAndSaveFiles(MultipartFile[] images, Carwash carwash) {
-        try {
-            // 이미지 업로드
-            List<String> imageUrls = uploadFiles(Arrays.asList(images));
-
-            // 파일 정보 저장
-            saveFileEntities(imageUrls, carwash);
-
-        } catch (Exception e) {
-            logger.error("File upload and save failed: " + e.getMessage(), e);
-            throw new RuntimeException("File upload and save failed", e);
-        }
-    }
-
-    private List<String> uploadFiles(List<MultipartFile> files) {
-        try {
-            logger.info("Image upload start");
-            return s3ProxyUploadService.uploadFiles(files);
-        } catch (Exception e) {
-            logger.error("File upload failed: " + e.getMessage(), e);
-            throw new RuntimeException("File upload failed", e);
-        }
-    }
-
-    private void saveFileEntities(List<String> imageUrls, Carwash carwash) {
-        try {
-            List<bdbe.bdbd.file.File> files = new ArrayList<>();
-            for (String imageUrl : imageUrls) {
-                bdbe.bdbd.file.File newFile = bdbe.bdbd.file.File.builder()
-                        .name(imageUrl.substring(imageUrl.lastIndexOf("/") + 1))
-                        .url(imageUrl)
-                        .uploadedAt(LocalDateTime.now())
-                        .carwash(carwash)
-                        .build();
-                files.add(newFile);
-            }
-            fileJPARepository.saveAll(files);
-            logger.info("File entities saved successfully");
-        } catch (Exception e) {
-            logger.error("Saving file entities failed: " + e.getMessage(), e);
-            throw new RuntimeException("Saving file entities failed", e);
-        }
-    }
 
     public List<CarwashRequest.CarwashDistanceDTO> findNearbyCarwashesByUserLocation(CarwashRequest.UserLocationDTO userLocation) {
         List<Carwash> carwashes = carwashJPARepository.findCarwashesWithin10Kilometers(userLocation.getLatitude(), userLocation.getLongitude());
@@ -255,9 +174,7 @@ public class CarwashService {
         Optime weekOptime = optimeByDayType.get(DayType.WEEKDAY);
         Optime endOptime = optimeByDayType.get(DayType.WEEKEND);
 
-        List<File> imageFiles = fileJPARepository.findByCarwash_Id(carwashId);
-
-        return new CarwashResponse.findByIdDTO(carwash, reviewCnt, bayCnt, location, keywordIds, weekOptime, endOptime, imageFiles);
+        return new CarwashResponse.findByIdDTO(carwash, reviewCnt, bayCnt, location, keywordIds, weekOptime, endOptime);
     }
 
     public CarwashResponse.carwashDetailsDTO findCarwashByDetails(Long carwashId) {
@@ -275,15 +192,16 @@ public class CarwashService {
         Optime weekOptime = optimeByDayType.get(DayType.WEEKDAY);
         Optime endOptime = optimeByDayType.get(DayType.WEEKEND);
 
-        List<File> imageFiles = fileJPARepository.findByCarwash_Id(carwashId);
+        return new CarwashResponse.carwashDetailsDTO(carwash, location, keywordIds, weekOptime, endOptime);
 
-        return new CarwashResponse.carwashDetailsDTO(carwash, location, keywordIds, weekOptime, endOptime,imageFiles);
 
     }
+
     private static final Logger logger = LoggerFactory.getLogger(CarwashService.class);
 
     @Transactional
-    public CarwashResponse.updateCarwashDetailsResponseDTO updateCarwashDetails(Long carwashId, CarwashRequest.updateCarwashDetailsDTO updatedto, MultipartFile[] images) {
+    public CarwashResponse.updateCarwashDetailsResponseDTO updateCarwashDetails(Long carwashId, CarwashRequest.updateCarwashDetailsDTO updatedto) {
+
         try {
             updateCarwashDetailsResponseDTO response = new updateCarwashDetailsResponseDTO();
             Carwash carwash = carwashJPARepository.findById(carwashId)
@@ -355,19 +273,11 @@ public class CarwashService {
             List<Long> updateKeywordIds = carwashKeywordJPARepository.findKeywordIdsByCarwashId(carwashId);
             response.updateKeywordPart(updateKeywordIds);
 
-            if (images != null && images.length > 0) {
-                try {
-                    List<FileResponse.SimpleFileResponseDTO> uploadedFiles = fileUploadUtil.uploadFiles(images, carwash.getId());
-                } catch (Exception e) {
-                    logger.error("Error uploading files: ", e);
-                    throw new FileUploadException("Could not upload files", e);
-                }
-            }
             return response;
-        }
-        catch (Exception e) {
+
+        } catch (Exception e) {
             logger.error("Error in updateCarwashDetails", e);
-            throw new RuntimeException("Error updating carwash details", e);
+            throw e;
         }
     }
 

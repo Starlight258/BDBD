@@ -19,10 +19,9 @@ public class FileRequest {
         }
     }
 
-    // File 엔티티 생성
     @Getter
     @Setter
-    public static class FileDTO {
+    public static class FileSaveRequestDTO {
         private String name;
         private String url;
         private String path;

@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api")
 public class ReservationRestController {
 
     private final ReservationService reservationService;
@@ -24,7 +23,7 @@ public class ReservationRestController {
             @AuthenticationPrincipal CustomUserDetails userDetails
             )
     {
-        reservationService.save(dto, carwashId, bayId, userDetails.getMember());
+        reservationService.save(dto, carwashId, bayId, userDetails.getUser());
 
         return ResponseEntity.ok(ApiUtils.success(null));
     }
@@ -67,8 +66,7 @@ public class ReservationRestController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     )
     {
-        ReservationResponse.findLatestOneResponseDTO dto = reservationService.fetchLatestReservation(userDetails.getMember());
-        System.out.println(dto.toString());
+        ReservationResponse.findLatestOneResponseDTO dto = reservationService.fetchLatestReservation(userDetails.getUser());
         return ResponseEntity.ok(ApiUtils.success(dto));
     }
 
@@ -78,7 +76,7 @@ public class ReservationRestController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     )
     {
-        ReservationResponse.fetchCurrentStatusReservationDTO dto = reservationService.fetchCurrentStatusReservation(userDetails.getMember());
+        ReservationResponse.fetchCurrentStatusReservationDTO dto = reservationService.fetchCurrentStatusReservation(userDetails.getUser());
         return ResponseEntity.ok(ApiUtils.success(dto));
     }
 
@@ -88,7 +86,7 @@ public class ReservationRestController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     )
     {
-        ReservationResponse.fetchRecentReservationDTO dto = reservationService.fetchRecentReservation(userDetails.getMember());
+        ReservationResponse.fetchRecentReservationDTO dto = reservationService.fetchRecentReservation(userDetails.getUser());
         return ResponseEntity.ok(ApiUtils.success(dto));
     }
 
