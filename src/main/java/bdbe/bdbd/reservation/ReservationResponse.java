@@ -1,16 +1,12 @@
 package bdbe.bdbd.reservation;
 
-import bdbe.bdbd._core.errors.utils.Haversine;
 import bdbe.bdbd.bay.Bay;
 import bdbe.bdbd.carwash.Carwash;
-import bdbe.bdbd.file.File;
 import bdbe.bdbd.location.Location;
-import bdbe.bdbd.member.OwnerResponse;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import javax.persistence.Column;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -66,7 +62,8 @@ public class ReservationResponse {
     public static class findLatestOneResponseDTO {
         private ReservationDTO reservation;
         private CarwashDTO carwash;
-        public findLatestOneResponseDTO(Reservation reservation, Bay bay, Carwash carwash, Location location, List<File> carwashImages) {
+
+        public findLatestOneResponseDTO(Reservation reservation, Bay bay, Carwash carwash, Location location) {
             ReservationDTO reservationDTO = new ReservationDTO();
 
             TimeDTO timeDTO = new TimeDTO();
@@ -83,9 +80,7 @@ public class ReservationResponse {
             locationDTO.latitude = location.getLatitude();
             locationDTO.longitude = location.getLongitude();
             carwashDTO.location = locationDTO;
-            carwashDTO.carwashImages = carwashImages.stream()
-                    .map(ImageDTO::new)
-                    .collect(Collectors.toList());
+//            carwashDTO.imagePath = image.getPath();
             this.carwash = carwashDTO;
         }
     }
@@ -103,7 +98,6 @@ public class ReservationResponse {
     public static class CarwashDTO {
         private String name;
         private LocationDTO location;
-        private List<ImageDTO> carwashImages;
 //        private String imagePath;
     }
     @Getter
@@ -119,24 +113,6 @@ public class ReservationResponse {
     public static class LocationDTO{
         private double latitude;
         private double longitude;
-    }
-    @Getter
-    @Setter
-    @ToString
-    public static class ImageDTO {
-        private Long id;
-        private String name;
-        private String url;
-        private String path;
-        private LocalDateTime uploadedAt;
-
-        public ImageDTO(File file) {
-            this.id = file.getId();
-            this.name = file.getName();
-            this.url = file.getUrl();
-            this.path = file.getPath();
-            this.uploadedAt = file.getUploadedAt();
-        }
     }
 
     @Getter

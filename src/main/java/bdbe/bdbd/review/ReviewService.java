@@ -12,7 +12,7 @@ import bdbe.bdbd.review.ReviewResponse.ReviewKeywordResponseDTO;
 import bdbe.bdbd.review.ReviewResponse.ReviewResponseDTO;
 import bdbe.bdbd.keyword.reviewKeyword.ReviewKeyword;
 import bdbe.bdbd.keyword.reviewKeyword.ReviewKeywordJPARepository;
-import bdbe.bdbd.member.Member;
+import bdbe.bdbd.user.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,18 +35,21 @@ public class ReviewService {
     private final KeywordJPARepository keywordJPARepository;
 
     @Transactional
-    public void createReview(ReviewRequest.SaveDTO dto, Member member) {
+    public void createReview(ReviewRequest.SaveDTO dto, User user) {
         Carwash carwash = carwashJPARepository.findById(dto.getCarwashId())
                 .orElseThrow(() -> new IllegalArgumentException("Carwash not found"));
         Reservation reservation = reservationJPARepository.findById(dto.getReservationId())
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
-        Review review = dto.toReviewEntity(member, carwash, reservation);
+        Review review = dto.toReviewEntity(user, carwash, reservation);
         log.info("review: {}", review);
 
         Review savedReview = reviewJPARepository.save(review);
         // 리뷰 키워드 저장
-        List<Long> keywordIdList = dto.getKeywordIdList();
-
+        List<Long> keywordIdList = dto.getKeywordList();
+        System.out.println("keywordIdList:");
+        for (Long aLong : keywordIdList) {
+            System.out.println(aLong);
+        }
         keywordIdList.stream()
                 .map(id -> {
                     Keyword keyword = keywordJPARepository.findById(id)
@@ -121,7 +124,7 @@ public class ReviewService {
         return reviews.stream()
                 .map(review -> {
                     List<ReviewKeyword> reviewKeywords = reviewKeywordJPARepository.findByReview_Id(review.getId());
-                    return new ReviewByCarwashIdDTO(review, review.getMember(), reviewKeywords);
+                    return new ReviewByCarwashIdDTO(review, review.getUser(), reviewKeywords);
                 })
                 .collect(Collectors.toList());
     }

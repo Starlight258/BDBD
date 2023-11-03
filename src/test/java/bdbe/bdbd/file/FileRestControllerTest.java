@@ -1,7 +1,5 @@
 package bdbe.bdbd.file;
 
-import bdbe.bdbd.carwash.Carwash;
-import bdbe.bdbd.carwash.CarwashJPARepository;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import org.junit.jupiter.api.Test;
@@ -30,30 +28,20 @@ public class FileRestControllerTest {
 
     @MockBean
     private FileService fileService;
-    @Autowired
-    private CarwashJPARepository carwashJPARepository;
 
     @Test
     public void testUploadFileSuccess() throws Exception {
-        MockMultipartFile multipartFile = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "Hello, World!".getBytes());
-        Carwash carwash = carwashJPARepository.findFirstBy();
-        File file = File.builder()
-                .url("http://example.com/s3/test.txt")
-                .path("/files/test.txt")
-                .name("test.txt")
-                .uploadedAt(LocalDateTime.now())
-                .carwash(carwash)
-                .build();
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "Hello, World!".getBytes());
+        Long carwashId = 1L;
 
-        Long carwashId = carwash.getId();
         FileResponse.SimpleFileResponseDTO successfulResponse = new FileResponse.SimpleFileResponseDTO(
-                file, carwashId
+                1L, "test.txt", "http://example.com/s3/test.txt", "/files/test.txt", LocalDateTime.now(), new FileResponse.SimpleCarwashDTO(carwashId)
         );
 
         when(fileService.uploadFile(any(), eq(carwashId))).thenReturn(successfulResponse);
 
         mockMvc.perform(multipart("/api/files/upload")
-                        .file(multipartFile)
+                        .file(file)
                         .param("carwashId", carwashId.toString())
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
@@ -61,7 +49,7 @@ public class FileRestControllerTest {
                 .andExpect(jsonPath("$.name").value("test.txt"))
                 .andExpect(jsonPath("$.url").value("http://example.com/s3/test.txt"))
                 .andExpect(jsonPath("$.path").value("/files/test.txt"))
-                .andExpect(jsonPath("$.carwashId").value(carwashId));
+                .andExpect(jsonPath("$.carwash.id").value(carwashId));
 
         verify(fileService, times(1)).uploadFile(any(), eq(carwashId));
     }

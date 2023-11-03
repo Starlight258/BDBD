@@ -1,8 +1,12 @@
-package bdbe.bdbd.member;
+package bdbe.bdbd.user;
 
 import bdbe.bdbd._core.errors.security.JWTProvider;
+import bdbe.bdbd.bay.Bay;
+import bdbe.bdbd.carwash.Carwash;
 import bdbe.bdbd.carwash.CarwashJPARepository;
+import bdbe.bdbd.reservation.Reservation;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +22,9 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -36,7 +43,7 @@ public class OwnerRestControllerTest {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    MemberJPARepository memberJPARepository;
+    UserJPARepository userJPARepository;
 
     @Autowired
     CarwashJPARepository carwashJPARepository;
@@ -47,27 +54,27 @@ public class OwnerRestControllerTest {
 
     @BeforeEach
     public void setup() {
-        MemberRequest.JoinDTO mockOwnerDTO = new MemberRequest.JoinDTO();
+        UserRequest.JoinDTO mockOwnerDTO = new UserRequest.JoinDTO();
         mockOwnerDTO.setUsername("aaamockowner");
         mockOwnerDTO.setEmail("aaamockowner@naver.com");
         mockOwnerDTO.setPassword("asdf1234!");
-//        mockOwnerDTO.setRole(MemberRole.ROLE_OWNER);
+        mockOwnerDTO.setRole(UserRole.ROLE_OWNER);
         mockOwnerDTO.setTel("010-1234-5678");
 
-        Member mockOwner = mockOwnerDTO.toOwnerEntity(passwordEncoder.encode(mockOwnerDTO.getPassword()));
+        User mockOwner = mockOwnerDTO.toEntity(passwordEncoder.encode(mockOwnerDTO.getPassword()));
 
-        memberJPARepository.save(mockOwner);
+        userJPARepository.save(mockOwner);
 
-        MemberRequest.JoinDTO mockUserDTO = new MemberRequest.JoinDTO();
+        UserRequest.JoinDTO mockUserDTO = new UserRequest.JoinDTO();
         mockUserDTO.setUsername("aaauserRoleUser");
         mockUserDTO.setEmail("aaauserRoleUser@naver.com");
         mockUserDTO.setPassword("aaaa1111!");
-//        mockUserDTO.setRole(MemberRole.ROLE_USER);
+        mockUserDTO.setRole(UserRole.ROLE_USER);
         mockUserDTO.setTel("010-1234-5678");
 
-        Member mockUserWithMemberRole = mockUserDTO.toUserEntity(passwordEncoder.encode(mockUserDTO.getPassword()));
+        User mockUserWithUserRole = mockUserDTO.toEntity(passwordEncoder.encode(mockUserDTO.getPassword()));
 
-        memberJPARepository.save(mockUserWithMemberRole);
+        userJPARepository.save(mockUserWithUserRole);
     }
 
 
@@ -75,12 +82,12 @@ public class OwnerRestControllerTest {
     @Test
     public void checkTest() throws Exception {
         //given
-        MemberRequest.EmailCheckDTO requestDTO = new MemberRequest.EmailCheckDTO();
+        UserRequest.EmailCheckDTO requestDTO = new UserRequest.EmailCheckDTO();
         requestDTO.setEmail("bdbd@naver.com");
         String requestBody = om.writeValueAsString(requestDTO);
         //when
         ResultActions resultActions = mvc.perform(
-                post("/api/owner/check")
+                post("/owner/check")
                         .content(requestBody)
                         .contentType(MediaType.APPLICATION_JSON)
         );
@@ -91,18 +98,18 @@ public class OwnerRestControllerTest {
 
     @Test
     public void joinTest() throws Exception {
-        MemberRequest.JoinDTO requestDTO = new MemberRequest.JoinDTO();
+        UserRequest.JoinDTO requestDTO = new UserRequest.JoinDTO();
         requestDTO.setUsername("aaamockowner");
         requestDTO.setEmail("aaamockowner@nate.com");
         requestDTO.setPassword("asdf1234!");
-//        requestDTO.setRole(MemberRole.ROLE_OWNER);
+        requestDTO.setRole(UserRole.ROLE_OWNER);
         requestDTO.setTel("010-1234-5678");
 
 
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                        post("/api/owner/join")
+                        post("/owner/join")
                                 .content(requestBody)
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
@@ -112,21 +119,21 @@ public class OwnerRestControllerTest {
 
     @Test
     public void loginTest() throws Exception {
-        MemberRequest.LoginDTO requestDTO = new MemberRequest.LoginDTO();
+        UserRequest.LoginDTO requestDTO = new UserRequest.LoginDTO();
         requestDTO.setEmail("aaamockowner@naver.com");
         requestDTO.setPassword("asdf1234!");
 
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                    post("/api/owner/login")
+                    post("/owner/login")
                             .content(requestBody)
                             .contentType(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
                 .andExpect(header().exists(JWTProvider.HEADER))
                 .andExpect(jsonPath("$.success").value("true"))
-//                .andExpect(jsonPath("$.response.redirectUrl").value("/owner/home"))
+                .andExpect(jsonPath("$.response.redirectUrl").value("/owner/home"))
                 .andDo(print());
     }
     //jwt.io 에서 ROLE_OWNER정상반환 확인함 및 리다이렉트 확인
@@ -134,14 +141,14 @@ public class OwnerRestControllerTest {
 
     @Test
     public void loginAsUserOnOwnerPageTest() throws Exception {
-        MemberRequest.LoginDTO requestDTO = new MemberRequest.LoginDTO();
+        UserRequest.LoginDTO requestDTO = new UserRequest.LoginDTO();
         requestDTO.setEmail("aaauserRoleUser@naver.com");
         requestDTO.setPassword("aaaa1111!");
 
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                        post("/api/owner/login")  // owner 페이지에서의 로그인 URL을 사용
+                        post("/owner/login")  // owner 페이지에서의 로그인 URL을 사용
                                 .content(requestBody)
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
@@ -158,8 +165,8 @@ public class OwnerRestControllerTest {
 
         //when
         ResultActions resultActions = mvc.perform(
-                get("/api/owner/sales")
-                        .param("carwash-id",   "2")
+                get("/owner/sales")
+                        .param("carwash-id",   "3")
                         .param("selected-date", "2023-10-01")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
         );
@@ -178,8 +185,8 @@ public class OwnerRestControllerTest {
 
         //when
         ResultActions resultActions = mvc.perform(
-                get("/api/owner/revenue")
-                        .param("carwash-id",  "2")
+                get("/owner/revenue")
+                        .param("carwash-id",  "3")
                         .param("selected-date", "2023-10-01")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
         );
@@ -198,7 +205,7 @@ public class OwnerRestControllerTest {
 
         //when
         ResultActions resultActions = mvc.perform(
-                get("/api/owner/carwashes"));
+                get("/owner/carwashes"));
         //then
         // eye
         String responseBody = resultActions.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
@@ -215,7 +222,7 @@ public class OwnerRestControllerTest {
         System.out.println("carwash id :" + carwashId);
         //when
         ResultActions resultActions = mvc.perform(
-                get(String.format("/api/owner/carwashes/%d", carwashId)));
+                get(String.format("/owner/carwashes/%d", carwashId)));
         //then
         // eye
         String responseBody = resultActions.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
@@ -231,7 +238,7 @@ public class OwnerRestControllerTest {
 
         //when
         ResultActions resultActions = mvc.perform(
-                get("/api/owner/home"));
+                get("/owner/home"));
         //then
         // eye
         String responseBody = resultActions.andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);

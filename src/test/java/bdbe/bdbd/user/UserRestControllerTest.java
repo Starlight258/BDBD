@@ -1,7 +1,8 @@
-package bdbe.bdbd.member;
+package bdbe.bdbd.user;
 
 import bdbe.bdbd._core.errors.security.JWTProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-public class MemberRestControllerTest {
+public class UserRestControllerTest {
 
     @Autowired
     private MockMvc mvc;
@@ -29,20 +30,20 @@ public class MemberRestControllerTest {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    MemberJPARepository memberJPARepository;
+    UserJPARepository userJPARepository;
 
     @BeforeEach
     public void setup() {
-        MemberRequest.JoinDTO mockUserDTO = new MemberRequest.JoinDTO();
+        UserRequest.JoinDTO mockUserDTO = new UserRequest.JoinDTO();
         mockUserDTO.setUsername("mockuser");
         mockUserDTO.setEmail("mock@naver.com");
         mockUserDTO.setPassword("asdf1234!");
-//        mockUserDTO.setRole(MemberRole.ROLE_USER);
+        mockUserDTO.setRole(UserRole.ROLE_USER);
         mockUserDTO.setTel("010-1234-5678");
 
-        Member mockMember = mockUserDTO.toUserEntity(passwordEncoder.encode(mockUserDTO.getPassword()));
+        User mockUser = mockUserDTO.toEntity(passwordEncoder.encode(mockUserDTO.getPassword()));
 
-        memberJPARepository.save(mockMember);
+        userJPARepository.save(mockUser);
     }
 
 
@@ -53,12 +54,12 @@ public class MemberRestControllerTest {
     @Test
     public void checkTest() throws Exception {
         //given
-        MemberRequest.EmailCheckDTO requestDTO = new MemberRequest.EmailCheckDTO();
+        UserRequest.EmailCheckDTO requestDTO = new UserRequest.EmailCheckDTO();
         requestDTO.setEmail("bdbd@naver.com");
         String requestBody = om.writeValueAsString(requestDTO);
         //when
         ResultActions resultActions = mvc.perform(
-                post("/api/user/check")
+                post("/user/check")
                         .content(requestBody)
                         .contentType(MediaType.APPLICATION_JSON)
         );
@@ -69,11 +70,11 @@ public class MemberRestControllerTest {
 
     @Test
     public void joinTest() throws Exception {
-        MemberRequest.JoinDTO requestDTO = new MemberRequest.JoinDTO();
+        UserRequest.JoinDTO requestDTO = new UserRequest.JoinDTO();
         requestDTO.setUsername("imnewuser");
         requestDTO.setEmail("newuser@naver.com");
         requestDTO.setPassword("asdf1234!");
-//        requestDTO.setRole(MemberRole.ROLE_USER);
+        requestDTO.setRole(UserRole.ROLE_USER);
 //        requestDTO.setCredit(0);
         requestDTO.setTel("010-1234-5678");
 
@@ -81,7 +82,7 @@ public class MemberRestControllerTest {
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                        post("/api/user/join")
+                        post("/user/join")
                                 .content(requestBody)
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
@@ -91,21 +92,21 @@ public class MemberRestControllerTest {
 
     @Test
     public void loginTest() throws Exception {
-        MemberRequest.LoginDTO requestDTO = new MemberRequest.LoginDTO();
+        UserRequest.LoginDTO requestDTO = new UserRequest.LoginDTO();
         requestDTO.setEmail("mock@naver.com");
         requestDTO.setPassword("asdf1234!");
 
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                        post("/api/user/login")
+                        post("/user/login")
                                 .content(requestBody)
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
                 .andExpect(header().exists(JWTProvider.HEADER))
                 .andExpect(jsonPath("$.success").value("true"))
-//                .andExpect(jsonPath("$.response.redirectUrl").value("/user/home"))
+                .andExpect(jsonPath("$.response.redirectUrl").value("/user/home"))
                 .andDo(print());
     }
     //jwt.io 에서 ROLE_USER정상반환 확인함 및 user/home으로 리다이렉트
@@ -115,11 +116,11 @@ public class MemberRestControllerTest {
     public void sameEmailTest() throws Exception {
 
         String email = "mock@naver.com";
-        MemberRequest.JoinDTO requestDTO = new MemberRequest.JoinDTO();
+        UserRequest.JoinDTO requestDTO = new UserRequest.JoinDTO();
         requestDTO.setUsername("imnewuser");
         requestDTO.setEmail(email);
         requestDTO.setPassword("asdf1234!");
-//        requestDTO.setRole(MemberRole.ROLE_USER);
+        requestDTO.setRole(UserRole.ROLE_USER);
 //        requestDTO.setCredit(0);
         requestDTO.setTel("010-1234-5678");
 
@@ -127,7 +128,7 @@ public class MemberRestControllerTest {
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                        post("/api/user/join")
+                        post("/user/join")
                                 .content(requestBody)
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
@@ -141,11 +142,11 @@ public class MemberRestControllerTest {
     public void joinEmailExceptionTest() throws Exception {
 
         String email = "mocknaver.com";
-        MemberRequest.JoinDTO requestDTO = new MemberRequest.JoinDTO();
+        UserRequest.JoinDTO requestDTO = new UserRequest.JoinDTO();
         requestDTO.setUsername("imnewuser");
         requestDTO.setEmail(email);
         requestDTO.setPassword("asdf1234!");
-//        requestDTO.setRole(MemberRole.ROLE_USER);
+        requestDTO.setRole(UserRole.ROLE_USER);
 //        requestDTO.setCredit(0);
         requestDTO.setTel("010-1234-5678");
 
@@ -153,7 +154,7 @@ public class MemberRestControllerTest {
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                        post("/api/user/join")
+                        post("/user/join")
                                 .content(requestBody)
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
@@ -167,11 +168,11 @@ public class MemberRestControllerTest {
     public void joinPasswordExceptionTest() throws Exception {
 
         String email = "mock@naver.com";
-        MemberRequest.JoinDTO requestDTO = new MemberRequest.JoinDTO();
+        UserRequest.JoinDTO requestDTO = new UserRequest.JoinDTO();
         requestDTO.setUsername("imnewuser");
         requestDTO.setEmail(email);
         requestDTO.setPassword("asdf1234");
-//        requestDTO.setRole(MemberRole.ROLE_USER);
+        requestDTO.setRole(UserRole.ROLE_USER);
 //        requestDTO.setCredit(0);
         requestDTO.setTel("010-1234-5678");
 
@@ -179,7 +180,7 @@ public class MemberRestControllerTest {
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                        post("/api/user/join")
+                        post("/user/join")
                                 .content(requestBody)
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
@@ -192,14 +193,14 @@ public class MemberRestControllerTest {
     @Test
     public void loginWrongEmailTest() throws Exception {
         String email = "aaaa@naver.com";
-        MemberRequest.LoginDTO requestDTO = new MemberRequest.LoginDTO();
+        UserRequest.LoginDTO requestDTO = new UserRequest.LoginDTO();
         requestDTO.setEmail(email);
         requestDTO.setPassword("asdf1234!");
 
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                        post("/api/user/login")
+                        post("/user/login")
                                 .content(requestBody)
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
@@ -213,14 +214,14 @@ public class MemberRestControllerTest {
     @Test
     public void loginWrongPasswordTest() throws Exception {
         String email = "mock@naver.com";
-        MemberRequest.LoginDTO requestDTO = new MemberRequest.LoginDTO();
+        UserRequest.LoginDTO requestDTO = new UserRequest.LoginDTO();
         requestDTO.setEmail(email);
         requestDTO.setPassword("aaaaaaaa!");
 
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                        post("/api/user/login")
+                        post("/user/login")
                                 .content(requestBody)
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
@@ -234,14 +235,14 @@ public class MemberRestControllerTest {
     @Test
     public void loginNotMatchPasswordTest() throws Exception {
         String email = "mock@naver.com";
-        MemberRequest.LoginDTO requestDTO = new MemberRequest.LoginDTO();
+        UserRequest.LoginDTO requestDTO = new UserRequest.LoginDTO();
         requestDTO.setEmail(email);
         requestDTO.setPassword("aaaa1234!");
 
         String requestBody = om.writeValueAsString(requestDTO);
 
         mvc.perform(
-                        post("/api/user/login")
+                        post("/user/login")
                                 .content(requestBody)
                                 .contentType(MediaType.APPLICATION_JSON)
                 )

@@ -1,9 +1,10 @@
 package bdbe.bdbd.carwash;
 
+import bdbe.bdbd.file.File;
 import bdbe.bdbd.optime.DayType;
 import bdbe.bdbd.optime.Optime;
 import bdbe.bdbd.location.Location;
-import bdbe.bdbd.member.Member;
+import bdbe.bdbd.user.User;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -29,16 +30,13 @@ public class CarwashRequest {
         private String price;
 
         private OperatingTimeDTO optime;
-//        private List<FileRequest.FileDTO> images;
-//        private List<MultipartFile> images;
-
+        private List<String> images;
         private List<Long> keywordId;
         private String description;
         private String tel;
 
 
-
-        public Carwash toCarwashEntity(Location location, Member member) {
+        public Carwash toCarwashEntity(Location location, User user) {
             return Carwash.builder()
                     .name(name)
                     .rate(0)
@@ -46,7 +44,7 @@ public class CarwashRequest {
                     .des(description)
                     .price(Integer.parseInt(price))  // 문자열 price를 int로 변환
                     .location(location)
-                    .member(member)
+                    .user(user)
                     .build();
         }
 
@@ -79,7 +77,18 @@ public class CarwashRequest {
             return optimeList;
         }
 
-
+        public List<File> toFileEntities(Carwash carwash) {
+            List<File> fileList = new ArrayList<>();
+            for (String image : images) {
+                String ext = getFileExtension(image);
+                File file = File.builder()
+                        .name(image)
+                        .path("https://cdn.example.com/images/image1.jpg")
+                        .build();
+                fileList.add(file);
+            }
+            return fileList;
+        }
 
         public String getFileExtension(String filename) {
             int dotIndex = filename.lastIndexOf('.');
