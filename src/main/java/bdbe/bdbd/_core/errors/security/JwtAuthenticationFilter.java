@@ -1,7 +1,8 @@
 package bdbe.bdbd._core.errors.security;
 
-import bdbe.bdbd.member.Member;
-import bdbe.bdbd.member.MemberRole;
+
+import bdbe.bdbd.user.User;
+import bdbe.bdbd.user.UserRole;
 import com.auth0.jwt.exceptions.SignatureVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -40,10 +41,10 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
             String role = decodedJWT.getClaim("role").asString();
             log.info("role: {}", role);
 
-            MemberRole roleEnum = MemberRole.valueOf(role);
-            Member member = Member.builder().id(id).role(roleEnum).build();
+            UserRole roleEnum = UserRole.valueOf(role);
+            User user = User.builder().id(id).role(roleEnum).build();
 
-            CustomUserDetails myUserDetails = new CustomUserDetails(member);
+            CustomUserDetails myUserDetails = new CustomUserDetails(user);
             Authentication authentication =
                     new UsernamePasswordAuthenticationToken(
                             myUserDetails,
@@ -53,24 +54,14 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             log.debug("디버그 : 인증 객체 만들어짐");
         } catch (SignatureVerificationException sve) {
-            sendErrorResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid token signature");
-            return;
+            log.error("토큰 검증 실패", sve);
         } catch (TokenExpiredException tee) {
-            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "JWT has expired");
-            return;
-        } catch (Exception e) {
-            sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An unexpected error occurred");
-            return;
+            log.error("토큰 만료됨", tee);
         }
-        chain.doFilter(request, response);
-    }
-    private void sendErrorResponse(HttpServletResponse response, int status, String message) {
-        response.setStatus(status);
-        try {
-            response.getWriter().write(message);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
+        catch (Exception e) {
+                log.error("예상치 못한 오류가 발생했습니다", e);
+        } finally {
+            chain.doFilter(request, response);
         }
     }
 }
