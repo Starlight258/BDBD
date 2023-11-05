@@ -8,8 +8,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
-
 
 @RequiredArgsConstructor
 @RestController
@@ -20,20 +18,24 @@ public class BayRestController {
     @PostMapping("/owner/carwashes/{carwash_id}/bays")
     public ResponseEntity<?> createBay(
             @PathVariable("carwash_id") Long carwashId,
-            @Valid @RequestBody BayRequest.SaveDTO saveDTO,
-            Errors errors,
+            @RequestBody BayRequest.SaveDTO saveDTO, Errors errors,
             @AuthenticationPrincipal CustomUserDetails userDetails)
     {
-        bayService.createBay(saveDTO, carwashId, userDetails.getMember());
+        bayService.createBay(saveDTO, carwashId);
         return ResponseEntity.ok(ApiUtils.success(null));
     }
 
-    @PutMapping("/owner/bays/{bay_id}/status")
+//    @DeleteMapping("/owner/bays/{bay_id}") //베이 삭제
+//    public ResponseEntity<?> deleteBay(@PathVariable("bay_id") Long bayId){
+//        bayService.deleteBay(bayId);
+//        return ResponseEntity.ok(ApiUtils.success(null));
+//    }
+
+    @PutMapping("/owner/bays/{bay_id}/status") //베이 활성화/비활성화
     public ResponseEntity<?> updateStatus(
             @PathVariable("bay_id") Long bayId,
-            @RequestParam int status,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        bayService.changeStatus(bayId, status, userDetails.getMember());
+            @RequestParam int status) {
+        bayService.changeStatus(bayId, status);
         return ResponseEntity.ok(ApiUtils.success(null));
     }
 

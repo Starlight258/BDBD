@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.time.LocalTime;
 
@@ -16,8 +15,8 @@ public class BayRequest {
     @ToString
     public static class SaveDTO {
 
-        @NotNull(message = "Bay number is required.")
-        private Integer bayNum;
+        @NotNull
+        private int bayNum;
 
         public Bay toBayEntity(Carwash carwash) {
             return Bay.builder()
@@ -28,6 +27,16 @@ public class BayRequest {
         }
 
     }
+    @Getter
+    @Setter
+    @ToString
+    public static class DeleteDTO {
+        @NotNull
+        private Long bayId;
+
+    }
+
+
 
     @Getter
     @Setter
