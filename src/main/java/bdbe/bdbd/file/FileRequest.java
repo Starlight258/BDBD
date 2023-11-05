@@ -24,7 +24,7 @@ public class FileRequest {
     public static class FileSaveRequestDTO {
         private String name;
         private String url;
-        private String path;
+//        private String path;
         private LocalDateTime uploadedAt;
         private Carwash carwash;
 
@@ -32,7 +32,7 @@ public class FileRequest {
             return File.builder()
                     .name(this.name)
                     .url(this.url)
-                    .path(this.path)
+//                    .path(this.path)
                     .uploadedAt(this.uploadedAt)
                     .carwash(this.carwash)
                     .build();
@@ -43,14 +43,14 @@ public class FileRequest {
     @Setter
     public static class FileUpdateDTO {
         private String url;
-        private String path;
+//        private String path;
         private LocalDateTime uploadedAt;
 
 
 
-        public FileUpdateDTO(String url, String path, LocalDateTime uploadedAt) {
+        public FileUpdateDTO(String url, LocalDateTime uploadedAt) {
             this.url = url;
-            this.path = path;
+//            this.path = path;
             this.uploadedAt = uploadedAt;
         }
     }

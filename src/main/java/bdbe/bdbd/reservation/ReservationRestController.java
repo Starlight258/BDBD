@@ -10,42 +10,44 @@ import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
 @RestController
+@RequestMapping("/api")
 public class ReservationRestController {
 
     private final ReservationService reservationService;
 
-    // 세차장 예약하기
-    @PostMapping("/carwashes/{carwash_id}/bays/{bay_id}/reservations")
-    public ResponseEntity<?> save(
+    // 결제 금액 조회하기
+    @PostMapping("/carwashes/{carwash_id}/payment")
+    public ResponseEntity<?> findPayAmount(
             @PathVariable("carwash_id") Long carwashId,
-            @PathVariable("bay_id") Long bayId,
-            @RequestBody ReservationRequest.SaveDTO dto,
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @RequestBody ReservationRequest.ReservationTimeDTO dto
             )
     {
-        reservationService.save(dto, carwashId, bayId, userDetails.getUser());
+        ReservationResponse.PayAmountDTO responseDTO = reservationService.findPayAmount(dto, carwashId);
 
-        return ResponseEntity.ok(ApiUtils.success(null));
+        return ResponseEntity.ok(ApiUtils.success(responseDTO));
     }
 
     // 예약 수정하기
     @PutMapping("/reservations/{reservation_id}")
     public ResponseEntity<?> updateReservation(
             @PathVariable("reservation_id") Long reservationId,
-            @RequestBody ReservationRequest.UpdateDTO dto
+            @RequestBody ReservationRequest.UpdateDTO dto,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+
     )
     {
-        reservationService.update(dto, reservationId);
+        reservationService.update(dto, reservationId, userDetails.getMember());
         return ResponseEntity.ok(ApiUtils.success(null));
     }
 
     // 예약 취소하기
     @DeleteMapping("/reservations/{reservation_id}")
     public ResponseEntity<?> deleteReservation(
-            @PathVariable("reservation_id") Long reservationId
+            @PathVariable("reservation_id") Long reservationId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
     )
     {
-        reservationService.delete(reservationId);
+        reservationService.delete(reservationId, userDetails.getMember());
         return ResponseEntity.ok(ApiUtils.success(null));
     }
 
@@ -60,15 +62,16 @@ public class ReservationRestController {
 
     }
 
-    // 결제 후 예약 내역 조회
-    @GetMapping("/reservations")
-    public ResponseEntity<?> fetchLatestReservation(
-            @AuthenticationPrincipal CustomUserDetails userDetails
-    )
-    {
-        ReservationResponse.findLatestOneResponseDTO dto = reservationService.fetchLatestReservation(userDetails.getUser());
-        return ResponseEntity.ok(ApiUtils.success(dto));
-    }
+//    // 결제 후 예약 내역 조회
+//    @GetMapping("/reservations")
+//    public ResponseEntity<?> fetchLatestReservation(
+//            @AuthenticationPrincipal CustomUserDetails userDetails
+//    )
+//    {
+//        ReservationResponse.findLatestOneResponseDTO dto = reservationService.fetchLatestReservation();
+//        System.out.println(dto.toString());
+//        return ResponseEntity.ok(ApiUtils.success(dto));
+//    }
 
     // 현재 시간 기준 예약 내역 조회
     @GetMapping("/reservations/current-status")
@@ -76,7 +79,7 @@ public class ReservationRestController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     )
     {
-        ReservationResponse.fetchCurrentStatusReservationDTO dto = reservationService.fetchCurrentStatusReservation(userDetails.getUser());
+        ReservationResponse.fetchCurrentStatusReservationDTO dto = reservationService.fetchCurrentStatusReservation(userDetails.getMember());
         return ResponseEntity.ok(ApiUtils.success(dto));
     }
 
@@ -86,7 +89,7 @@ public class ReservationRestController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     )
     {
-        ReservationResponse.fetchRecentReservationDTO dto = reservationService.fetchRecentReservation(userDetails.getUser());
+        ReservationResponse.fetchRecentReservationDTO dto = reservationService.fetchRecentReservation(userDetails.getMember());
         return ResponseEntity.ok(ApiUtils.success(dto));
     }
 

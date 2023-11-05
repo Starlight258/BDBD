@@ -1,21 +1,23 @@
 package bdbe.bdbd.reservation;
 
 
+import bdbe.bdbd._core.errors.exception.BadRequestError;
+import bdbe.bdbd._core.errors.exception.ForbiddenError;
+import bdbe.bdbd._core.errors.exception.NotFoundError;
 import bdbe.bdbd._core.errors.utils.DateUtils;
 import bdbe.bdbd.bay.Bay;
 import bdbe.bdbd.bay.BayJPARepository;
 import bdbe.bdbd.carwash.Carwash;
 import bdbe.bdbd.carwash.CarwashJPARepository;
-import bdbe.bdbd.keyword.reviewKeyword.ReviewKeywordJPARepository;
+import bdbe.bdbd.file.File;
+import bdbe.bdbd.file.FileJPARepository;
 import bdbe.bdbd.location.Location;
 import bdbe.bdbd.location.LocationJPARepository;
 import bdbe.bdbd.optime.DayType;
 import bdbe.bdbd.optime.Optime;
 import bdbe.bdbd.optime.OptimeJPARepository;
 import bdbe.bdbd.reservation.ReservationResponse.ReservationInfoDTO;
-import bdbe.bdbd.review.Review;
-import bdbe.bdbd.review.ReviewJPARepository;
-import bdbe.bdbd.user.User;
+import bdbe.bdbd.member.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,10 +29,10 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -41,39 +43,44 @@ public class ReservationService {
     private final BayJPARepository bayJPARepository;
     private final LocationJPARepository locationJPARepository;
     private final OptimeJPARepository optimeJPARepository;
-    private final ReviewJPARepository reviewJPARepository;
-    private final ReviewKeywordJPARepository reviewKeywordJPARepository;
+    private final FileJPARepository fileJPARepository;
 
     @Transactional
-    public void save(ReservationRequest.SaveDTO dto, Long carwashId, Long bayId, User sessionUser) {
+    public Reservation save(ReservationRequest.SaveDTO dto, Long carwashId, Long bayId, Member sessionMember) {
         Carwash carwash = findCarwashById(carwashId);
         Optime optime = findOptime(carwash, dto.getStartTime());
 
         validateReservationTime(dto, optime, bayId);
         Bay bay = findBayById(bayId);
 
-        Reservation reservation = dto.toReservationEntity(carwash, bay, sessionUser);
+        Reservation reservation = dto.toReservationEntity(carwash, bay, sessionMember);
         reservationJPARepository.save(reservation);
+        return reservation;
     }
 
     @Transactional
-    public void update(ReservationRequest.UpdateDTO dto, Long reservationId) {
+    public void update(ReservationRequest.UpdateDTO dto, Long reservationId, Member member) {
         Reservation reservation = reservationJPARepository.findById(reservationId)
                 .filter(r -> !r.isDeleted())
-                .orElseThrow(() -> new IllegalArgumentException("Reservation with id " + reservationId + " not found"));
+                .orElseThrow(() -> new NotFoundError("Reservation with id " + reservationId + " not found"));
+        if (reservation.getMember().getId() != member.getId())
+            throw new ForbiddenError("You do not have permission to modify this reservation.");
         Long carwashId = reservation.getBay().getCarwash().getId();
         Carwash carwash = carwashJPARepository.findById(carwashId)
-                .orElseThrow(() -> new IllegalArgumentException("Carwash with id " + carwashId + " not found"));
+                .orElseThrow(() -> new NotFoundError("Carwash with id " + carwashId + " not found"));
 
         reservation.updateReservation(dto.getStartTime(), dto.getEndTime(), carwash);
-
     }
 
     @Transactional
-    public void delete(Long reservationId) {
+    public void delete(Long reservationId, Member member) {
         Reservation reservation = reservationJPARepository.findById(reservationId)
                 .filter(r -> !r.isDeleted())
-                .orElseThrow(() -> new IllegalArgumentException("Reservation with id " + reservationId + " not found"));
+                .orElseThrow(() -> new NotFoundError("Reservation with id " + reservationId + " not found"));
+        System.out.println("id :" + reservation.getMember().getId());
+        System.out.println("id : " + member.getId());
+        if (reservation.getMember().getId() != member.getId())
+            throw new ForbiddenError("You do not have permission to delete this reservation.");
         reservation.changeDeletedFlag(true);
     }
 
@@ -102,10 +109,10 @@ public class ReservationService {
         // 예약이 운영시간을 넘지 않도록 함
         if (!((opStartTime.isBefore(dtoStartTimePart) || opStartTime.equals(dtoStartTimePart)) &&
                 (opEndTime.isAfter(dtoEndTimePart) || opEndTime.equals(dtoEndTimePart)))) {
-            throw new IllegalArgumentException("Reservation time is out of operating hours");
+            throw new BadRequestError("Reservation time is out of operating hours");
         }
         // 이미 예약된 시간은 피하도록 함
-        List<Reservation> reservationList = reservationJPARepository.findByBay_Id(bayId);
+        List<Reservation> reservationList = reservationJPARepository.findByBay_IdAndIsDeletedFalse(bayId);
 
         boolean isOverlapping = reservationList.stream()
                 .anyMatch(existingReservation -> {
@@ -118,7 +125,7 @@ public class ReservationService {
                 });
 
         if (isOverlapping) {
-            throw new IllegalArgumentException("Reservation time overlaps with an existing reservation.");
+            throw new BadRequestError("Reservation time overlaps with an existing reservation.");
         }
 
     }
@@ -135,16 +142,13 @@ public class ReservationService {
         // id만 추출하기
         List<Long> bayIdList = bayJPARepository.findIdsByCarwashId(carwashId);
         //예약에서 베이 id 리스트로 모두 찾기
-        List<Reservation> reservationList = reservationJPARepository.findByBayIdIn(bayIdList)
-                .stream()
-                .filter(r -> !r.isDeleted())
-                .collect(Collectors.toList());
+        List<Reservation> reservationList = reservationJPARepository.findByBayIdInAndIsDeletedFalse(bayIdList);
         return new ReservationResponse.findAllResponseDTO(bayList, reservationList);
     }
 
-    public ReservationResponse.findLatestOneResponseDTO fetchLatestReservation(User sessionUser) {
+    public ReservationResponse.findLatestOneResponseDTO fetchLatestReservation(Long reservationId) {
         // 가장 최근의 예약 찾기
-        Reservation reservation = reservationJPARepository.findTopByUserIdOrderByIdDesc(sessionUser.getId())
+        Reservation reservation = reservationJPARepository.findById(reservationId)
                 .filter(r -> !r.isDeleted())
                 .orElseThrow(() -> new NoSuchElementException("no reservation found"));
         // 예약과 관련된 베이 찾기
@@ -156,15 +160,14 @@ public class ReservationService {
         // 세차장이 위치한 위치 찾기
         Location location = locationJPARepository.findById(carwash.getLocation().getId())
                 .orElseThrow(() -> new NoSuchElementException("no location found"));
-        return new ReservationResponse.findLatestOneResponseDTO(reservation, bay, carwash, location);
+
+        File file = fileJPARepository.findFirstByCarwashIdAndIsDeletedFalseOrderByUploadedAtAsc(carwash.getId()).orElse(null);
+        return new ReservationResponse.findLatestOneResponseDTO(reservation, bay, carwash, location, file);
     }
 
-    public ReservationResponse.fetchCurrentStatusReservationDTO fetchCurrentStatusReservation(User sessionUser) {
+    public ReservationResponse.fetchCurrentStatusReservationDTO fetchCurrentStatusReservation(Member sessionMember) {
         // 유저의 예약내역 모두 조회
-        List<Reservation> reservationList = reservationJPARepository.findByUserId(sessionUser.getId())
-                .stream()
-                .filter(r -> !r.isDeleted())
-                .collect(Collectors.toList());
+        List<Reservation> reservationList = reservationJPARepository.findByMemberIdAndIsDeletedFalse(sessionMember.getId());
         // 현재, 다가오는, 완료된 예약 찾기
         List<ReservationInfoDTO> current = new ArrayList<>();
         List<ReservationInfoDTO> upcoming = new ArrayList<>();
@@ -175,10 +178,14 @@ public class ReservationService {
         // 예약 분류하기
         for (Reservation reservation : reservationList) {
             Bay bay = bayJPARepository.findById(reservation.getBay().getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Bay not found"));
+                    .orElseThrow(() -> new BadRequestError("Bay not found"));
             Carwash carwash = carwashJPARepository.findById(bay.getCarwash().getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Carwash not found"));
+                    .orElseThrow(() -> new BadRequestError("Carwash not found"));
 
+            List<File> fileList = carwash.getFileList();
+//            if (!fileList.isEmpty()) {
+//                File file = fileList.get(0);
+//            }
             LocalDateTime startDateTime = reservation.getStartTime();
             LocalDate reservationDate = startDateTime.toLocalDate();
             LocalDateTime endDateTime = reservation.getEndTime();
@@ -196,21 +203,42 @@ public class ReservationService {
             } else if (reservationDate.isAfter(today)) {
                 upcoming.add(new ReservationInfoDTO(reservation, bay, carwash));
             } else {
-                throw new IllegalStateException("reservation id: " + reservation.getId() + " not found");
+                throw new BadRequestError("reservation id: " + reservation.getId() + " not found");
             }
         }
         return new ReservationResponse.fetchCurrentStatusReservationDTO(current, upcoming, completed);
     }
 
-    public ReservationResponse.fetchRecentReservationDTO fetchRecentReservation(User sessionUser) {
+    public ReservationResponse.fetchRecentReservationDTO fetchRecentReservation(Member sessionMember) {
         // 유저의 예약내역 모두 조회
         Pageable pageable = PageRequest.of(0, 5); // 최대 5개까지만 가져오기
-        List<Reservation> reservationList = reservationJPARepository.findByUserIdJoinFetch(sessionUser.getId(), pageable)
-                .stream()
-                .filter(r -> !r.isDeleted())
-                .collect(Collectors.toList());
+        List<Reservation> reservationList = reservationJPARepository.findByMemberIdJoinFetch(sessionMember.getId(), pageable);
+        List<ReservationResponse.RecentReservation> recentReservations = new ArrayList<>();
+        for (Reservation reservation : reservationList) {
+            Bay bay = bayJPARepository.findById(reservation.getBay().getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Bay not found"));
+            Carwash carwash = carwashJPARepository.findById(bay.getCarwash().getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Carwash not found"));
+            List<File> carwashImages = fileJPARepository.findByCarwash_IdAndIsDeletedFalse(carwash.getId());
+            File carwashImage = carwashImages.stream().findFirst().orElse(null);
 
-        return new ReservationResponse.fetchRecentReservationDTO(reservationList);
+            recentReservations.add(new ReservationResponse.RecentReservation(reservation, carwashImage));
+        }
+
+        return new ReservationResponse.fetchRecentReservationDTO(recentReservations);
     }
 
+    public ReservationResponse.PayAmountDTO findPayAmount(ReservationRequest.ReservationTimeDTO dto, Long carwashId) {
+        Carwash carwash = carwashJPARepository.findById(carwashId)
+                .orElseThrow(() -> new BadRequestError("carwash id: " + carwashId + " not found"));
+        int perPrice = carwash.getPrice();
+
+        LocalDateTime startTime = dto.getStartTime();
+        LocalDateTime endTime = dto.getEndTime();
+
+        int minutesDifference = (int) ChronoUnit.MINUTES.between(startTime, endTime); //시간 차 계산
+        int blocksOf30Minutes = minutesDifference / 30; //30분 단위로 계산
+        int totalPrice = perPrice * blocksOf30Minutes;
+        return new ReservationResponse.PayAmountDTO(startTime, endTime, totalPrice);
+    }
 }
