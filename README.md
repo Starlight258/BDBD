@@ -33,21 +33,21 @@
 
 | 문서 종류          | 링크                                                                               |
 | ------------------ | ---------------------------------------------------------------------------------- |
-| API 문서           | [API 문서](https://www.notion.so/API-67efa4eea535426b89649a8c311b80a0?pvs=4)       |
-| ERD                | [ERD](https://www.notion.so/ERD-984ec51ccd7e435f8331857a325d1516?pvs=4)            |
-| 에러코드 정의서    | [에러코드 정의서](https://www.notion.so/004bbaf9938443bd92e86c0f51bb70f0?pvs=4)    |
-| 코딩 컨벤션        | [코딩 컨벤션](https://www.notion.so/37636b2e131048acb4e238472496b246?pvs=4)        |
-| Git 작업 단위      | [Git 작업 단위](https://www.notion.so/git-70b0a49482c8434abab83b06c0bc94c1?pvs=4)  |
-| 커밋 컨벤션        | [커밋 컨벤션](https://www.notion.so/f88b7fb79bf94fdca5099a70d971983b?pvs=4)        |
-| 테스트 시나리오    | [테스트 시나리오](https://www.notion.so/c55b2e5aff9b443a90d0799d3b84f8a5?pvs=4)    |
-| 테스트 결과 보고서 | [테스트 결과 보고서](https://www.notion.so/5db4232de5c047a7b3eac6b4b214dfed?pvs=4) |
+| API 문서           | [API 문서](https://succinct-washer-65e.notion.site/API-959f06119f564b16b9ec8f4333ad48de)       |
+| ERD                | [ERD](https://succinct-washer-65e.notion.site/ERD-7afc84fb28d644a5b521968761612af9)            |
+| 에러코드 정의서    | [에러코드 정의서](https://succinct-washer-65e.notion.site/4bdb3941f6b540dca7267cf2baf891a0)    |
+| 코딩 컨벤션        | [코딩 컨벤션](https://succinct-washer-65e.notion.site/e1e6df41dc9041a5b82d88463edc3be2)        |
+| Git 작업 단위      | [Git 작업 단위](https://succinct-washer-65e.notion.site/git-79d5288c3ef849d9a70134ab576e1f93)  |
+| 커밋 컨벤션        | [커밋 컨벤션](https://succinct-washer-65e.notion.site/9a3a1822e6e3458cb5a21f8f291d04f3)        |
+| 테스트 시나리오    | [테스트 시나리오](https://succinct-washer-65e.notion.site/2255c521c2ca4930bd8fefe148fe748b)    |
+| 테스트 결과 보고서 | [테스트 결과 보고서](https://succinct-washer-65e.notion.site/155567f5974949b4b53357315c2cacc9) |
 
 ### 기획 문서
 
 | 문서 종류     | 링크                                                                                                                                                                                                                           |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 기획 자료     | [기획 자료](https://www.notion.so/as_is_to_be-8ab0b5dab76a4a608343200301ac5008?pvs=4)                                                                                                                                          |
-| 기획 발표자료 | [기획 발표자료](https://www.notion.so/Weekly-01cdc0b6e98a418db0d7ee886e8b7594?pvs=4#64122c5a98cb4426b4302c94fdbe57a7)                                                                                                          |
+| 기획 자료     | [기획 자료](https://succinct-washer-65e.notion.site/as_is_to_be-6946c5b3cba54ae892531bae4151d3d7)                                                                                                                                          |
+| 기획 발표자료 | [기획 발표자료](https://www.notion.so/Weekly-ee58410d9e9f4bed871e4e4aaf7cb214?pvs=4#e326c2de2b274962bcfa04df830d7fbd)                                                                                                          |
 | 와이어 프레임 | [와이어 프레임](https://www.figma.com/file/raidVFqnBM3KgJY4KFCoB1/%EB%BD%80%EB%93%9D%EB%BD%80%EB%93%9D-%EC%99%80%EC%9D%B4%EC%96%B4%ED%94%84%EB%A0%88%EC%9E%84?type=design&node-id=478%3A3616&mode=design&t=tW0gdxACISuQbhdX-1) |
 
 ### 배포 주소
